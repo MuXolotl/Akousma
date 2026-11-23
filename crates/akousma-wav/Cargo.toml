@@ -1,0 +1,16 @@
+[package]
+name = "akousma-wav"
+description = "WAVE demuxer (RIFF, RIFX, RF64, BW64, Sony Wave64) and IMA and Microsoft ADPCM decoders for the Akousma audio decoding library"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+documentation = "https://docs.rs/akousma-wav"
+keywords = ["audio", "wav", "riff", "adpcm", "decoder"]
+categories = ["multimedia::audio", "multimedia::encoding", "parser-implementations"]
+
+[dependencies]
+akousma-core = { version = "0.1.0", path = "../akousma-core" }
+akousma-meta = { version = "0.1.0", path = "../akousma-meta" }

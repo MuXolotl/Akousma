@@ -1,0 +1,8 @@
+# cargo fuzz output: the working corpus (seeds/ is the committed part),
+# crashes and timeouts, coverage reports and the build.
+corpus/
+artifacts/
+coverage/
+target/
+# Resolved on each run, on the nightly toolchain that cargo fuzz needs.
+Cargo.lock

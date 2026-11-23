@@ -1,0 +1,2 @@
+# Only path dependencies: there is nothing to pin.
+Cargo.lock

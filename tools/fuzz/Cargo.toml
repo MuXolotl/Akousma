@@ -1,0 +1,39 @@
+[package]
+name = "akousma-fuzz"
+description = "Fuzz targets for akousma (cargo fuzz)"
+version = "0.0.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+# A standalone package: the root workspace excludes `tools/`.
+[workspace]
+
+[dependencies]
+akousma = { path = "../../crates/akousma" }
+akousma-meta = { path = "../../crates/akousma-meta" }
+libfuzzer-sys = "0.4"
+
+[[bin]]
+name = "probe"
+path = "fuzz_targets/probe.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "seek"
+path = "fuzz_targets/seek.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "tags"
+path = "fuzz_targets/tags.rs"
+test = false
+doc = false
+bench = false

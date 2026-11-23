@@ -1,0 +1,34 @@
+# Real WAV files that akousma did not write, pinned by SHA-256.
+# Format: URL SHA-256. The files are downloaded by `--corpus` and never committed.
+
+# PCM 16-bit mono 8 kHz; avgByteRate 128000 instead of 16000, LIST between fmt and data.
+https://fate-suite.ffmpeg.org/wav/wrong-avg-byterate.wav 3bbb7f3578d61f2df514b40667a930d00efd1ab9ec11eaef608d0ab0dd586a17
+# Broadcast WAVE: an 858-byte bext before fmt, then data, cue and list; PCM 16-bit stereo 48 kHz.
+https://fate-suite.ffmpeg.org/wav/200828-005.wav ace1db218d13c994d805a894eef4635a3980d0b1ceb938c3600c62c120b87465
+# 8-bit unsigned PCM, the one width that is easy to forget; also has afsp and LIST chunks.
+https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/Samples/AFsp/M1F1-uint8-AFsp.wav c97b28845f2946d530f1a3b8f0a18b5742d2d27a8af17cfeee7849e6984672ac
+# A-law in a WAVE file, 8 kHz stereo, with a fact chunk that states the sample count.
+https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/Samples/AFsp/M1F1-Alaw-AFsp.wav cfbc1821b7dd3d288d4223859c454d28065f4fbf23eabcdc77a13166a61fd37f
+# mu-law in a WAVE file, 8 kHz stereo.
+https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/Samples/AFsp/M1F1-mulaw-AFsp.wav aef5dcee22513418d90dcd9aa45bdd635888fb0e1ca8e35269b6cd4ad3261798
+# WAVE_FORMAT_EXTENSIBLE with 12 valid bits in a 16-bit container and no channel mask:
+# the samples are aligned to the most significant bit, a quiet-by-16 trap if read as 16-bit.
+https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/Samples/AFsp/M1F1-int12WE-AFsp.wav da5b129959f163a1e23f53ff66acdf45f57e4c98fbce09f5f755788a22c2d74b
+# WAVE_FORMAT_EXTENSIBLE, 24-bit samples, no channel mask.
+https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/Samples/AFsp/M1F1-int24WE-AFsp.wav 9261b8613060992d6dc0d1c19d896afad91af693dbe71d82066793b427c7c708
+# WAVE_FORMAT_EXTENSIBLE with 64-bit float samples: the only real file that exercises the f64 path.
+https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/Samples/AFsp/M1F1-float64WE-AFsp.wav c5372f6e79616369f91a7347f91020616a24e5b9eacbe2b3a5ee2ad14815d245
+# WAVE_FORMAT_EXTENSIBLE 5.1: channel mask 0x3F, 16-bit, and a cue chunk that becomes chapters.
+https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/Samples/Microsoft/6_Channel_ID.wav eca53093b374070d43ebfd409c0c05cf9a83b5d8bc92c47a213ca733b27f8b0a
+# A 66-byte file: mu-law with a foreign XxXx chunk between fmt and data, and a root size
+# eight bytes longer than the file.
+https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/Samples/Perverse/Pmiscck.wav 085bf800f56bfd85a4177912061cec94308b04e64fcd92975e2fafc2d3840f20
+# GSM 6.10: not a format akousma reads. The fmt chunk also has bits_per_sample 0 and
+# a block alignment of 65, so a reader that trusts the header blindly will misbehave.
+https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/Samples/Goldwave/addf8-GSM-GW.wav 15799fe709b1d7d86a888b0dc8dbf3e528e36472c9abad1a31b58e9ba19d858f
+# WavPack inside a RIFF container (format tag 0x161), and the file is truncated:
+# the root size claims 1120884 bytes, the file has 65536.
+https://fate-suite.ffmpeg.org/wav/FLCL_Ending_My-short.wav cd14eacaddaecdddcaefa0bb89ddf8a6309991c3e170a6d22c55a2bcffbae842
+# Sony Wave64 from the FFmpeg FATE suite: PCM 16-bit mono 11025 Hz. The root size field is
+# eight bytes short of the data chunk, which is what ffmpeg's own muxer wrote in 2008.
+https://fate-suite.ffmpeg.org/w64/w64-pcm16.w64 75090bfd5d74bef6a5331fffa01ae4fade121db2da66d194b504d5924ae02d41

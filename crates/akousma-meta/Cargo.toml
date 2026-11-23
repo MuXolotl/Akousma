@@ -1,0 +1,15 @@
+[package]
+name = "akousma-meta"
+description = "Read-only parsers of ID3v1, APE, Lyrics3 and RIFF INFO tags for the Akousma audio decoding library"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+documentation = "https://docs.rs/akousma-meta"
+keywords = ["audio", "id3", "ape", "tags", "metadata"]
+categories = ["multimedia::audio", "parser-implementations"]
+
+[dependencies]
+akousma-core = { version = "0.1.0", path = "../akousma-core" }

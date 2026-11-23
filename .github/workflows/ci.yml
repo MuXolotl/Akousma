@@ -1,0 +1,223 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  CARGO_NET_RETRY: "10"
+  RUST_BACKTRACE: "1"
+  # The blocking jobs use a fixed toolchain, so a lint added in a new stable
+  # release cannot turn them red; the `stable` job shows such lints early.
+  # Raise RUST_PINNED once the `stable` job is green, here and in bench.yml.
+  RUST_PINNED: "1.99.1"
+  # Keep RUST_MSRV and the name of the msrv job in step with rust-version.
+  RUST_MSRV: "1.88"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - name: Keep line endings as committed
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust ${{ env.RUST_PINNED }}
+        run: |
+          rustup toolchain install "$RUST_PINNED" --profile minimal --component clippy,rustfmt
+          rustup default "$RUST_PINNED"
+          rustc --version
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-test-${{ env.RUST_PINNED }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-test-${{ env.RUST_PINNED }}-
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Documentation
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc --workspace --no-deps --all-features
+      - name: Tests
+        run: cargo test --workspace --all-features
+      - name: Doctests
+        run: cargo test --workspace --all-features --doc
+      - name: Check without default features
+        run: cargo check --workspace --no-default-features
+
+  wasm:
+    name: WebAssembly check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust ${{ env.RUST_PINNED }} with wasm32-unknown-unknown
+        run: |
+          rustup toolchain install "$RUST_PINNED" --profile minimal --target wasm32-unknown-unknown
+          rustup default "$RUST_PINNED"
+          rustc --version
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-wasm-${{ env.RUST_PINNED }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-wasm-${{ env.RUST_PINNED }}-
+      # Check only: there is nothing to run on wasm32-unknown-unknown.
+      - name: Check
+        run: cargo check --workspace --all-features --target wasm32-unknown-unknown
+
+  msrv:
+    name: MSRV 1.88
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust ${{ env.RUST_MSRV }}
+        run: |
+          rustup toolchain install "$RUST_MSRV" --profile minimal --component clippy
+          rustup default "$RUST_MSRV"
+          rustc --version
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+            tools/benchmarks/target/
+          key: ${{ runner.os }}-msrv-${{ env.RUST_MSRV }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-msrv-${{ env.RUST_MSRV }}-
+      - name: Check
+        run: cargo check --workspace --all-features
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Tests
+        run: cargo test --workspace --all-features
+      - name: Check the benchmark package
+        run: cargo check --manifest-path tools/benchmarks/Cargo.toml --locked
+
+  # The benchmark package uses its committed Cargo.lock (--locked), so a new
+  # release of a dependency cannot break these jobs or the MSRV job; updating
+  # the dependencies is a commit of its own.
+  benchmarks:
+    name: Benchmark package
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust ${{ env.RUST_PINNED }}
+        run: |
+          rustup toolchain install "$RUST_PINNED" --profile minimal --component clippy,rustfmt
+          rustup default "$RUST_PINNED"
+          rustc --version
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            tools/benchmarks/target/
+          key: ${{ runner.os }}-benchmarks-${{ env.RUST_PINNED }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-benchmarks-${{ env.RUST_PINNED }}-
+      - name: Format
+        run: cargo fmt --manifest-path tools/benchmarks/Cargo.toml -- --check
+      - name: Check
+        run: cargo check --manifest-path tools/benchmarks/Cargo.toml --all-targets --locked
+      - name: Clippy
+        run: cargo clippy --manifest-path tools/benchmarks/Cargo.toml --all-targets --locked -- -D warnings
+      # The unit tests of the report text; they run no benchmark and need no
+      # ffmpeg.
+      - name: Test
+        run: cargo test --manifest-path tools/benchmarks/Cargo.toml --locked
+      # Only built: running it needs ffmpeg and the network (samples.yml).
+      # Built here so that a change of the crates that breaks it shows up in
+      # CI, not at the next manual samples run.
+      - name: Build tools/check
+        run: cargo build --manifest-path tools/check/Cargo.toml --all-targets
+      # The release tool parses manifests and the changelog; its unit tests are
+      # the only place those rules are checked without cutting a release.
+      - name: Test tools/release
+        run: cargo test --manifest-path tools/release/Cargo.toml
+
+  # What each `.crate` would contain: both licences and the crate's own
+  # files, no `tools/`. Building the package against the registry needs the
+  # dependencies of the crate published, so only the listing is checked here;
+  # the publication itself builds every crate.
+  package:
+    name: Package contents
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust ${{ env.RUST_PINNED }}
+        run: |
+          rustup toolchain install "$RUST_PINNED" --profile minimal
+          rustup default "$RUST_PINNED"
+          rustc --version
+      - name: Package the four crates
+        run: |
+          for crate in akousma-core akousma-meta akousma-wav akousma; do
+            echo "== $crate"
+            cargo package -p "$crate" --list
+          done
+          # Only the crate without workspace dependencies can be built against
+          # the registry; the others need their dependencies published.
+          cargo package -p akousma-core
+
+  stable:
+    name: Latest stable (non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the latest stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component clippy
+          rustup default stable
+          rustc --version
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Tests
+        run: cargo test --workspace --all-features

@@ -1,0 +1,167 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release, for example 0.1.0'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  # The release starts CI itself: ci.yml has no push trigger.
+  actions: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  # Publication order: a crate goes to crates.io only after everything it
+  # depends on is there. The facade goes last.
+  CRATES: akousma-core akousma-meta akousma-wav akousma
+
+jobs:
+  release:
+    name: Release ${{ inputs.version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          # The push below uses this credential.
+          persist-credentials: true
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Release only from main
+        run: |
+          branch=$(git rev-parse --abbrev-ref HEAD)
+          if [ "$branch" != "main" ]; then
+            echo "a release is cut from main only; this run is on '$branch'" >&2
+            exit 1
+          fi
+
+      # A rerun after a red CI finds the bump commit already on main: the
+      # version is applied and only the tag is missing.
+      - name: Apply the version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if grep -q "^## \[$VERSION\]" CHANGELOG.md; then
+            echo "version $VERSION is already in the changelog"
+            exit 0
+          fi
+          cargo run --quiet --release --manifest-path tools/release/Cargo.toml -- --version "$VERSION"
+          git --no-pager diff --stat
+
+      - name: Commit and push the bump
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add Cargo.toml crates/*/Cargo.toml CHANGELOG.md
+          if ! git diff --staged --quiet; then
+            git commit -m "Release v$VERSION"
+            git push origin HEAD:main
+          fi
+
+      # ci.yml is dispatch-only, so the release starts it on the bump commit
+      # and waits for its conclusion before the tag exists.
+      - name: Wait for CI on the bump commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sha=$(git rev-parse HEAD)
+          echo "commit $sha"
+          gh workflow run ci.yml --ref main
+          sleep 30
+          for _ in $(seq 1 90); do
+            read -r status conclusion < <(
+              gh run list --commit "$sha" --workflow ci.yml --limit 1 \
+                --json status,conclusion \
+                --jq '.[0] | if . == null then "queued " else "\(.status) \(.conclusion)" end'
+            )
+            echo "ci: $status ${conclusion:-}"
+            case "$status" in
+              completed)
+                [ "$conclusion" = success ] || {
+                  echo "CI on $sha is $conclusion; no tag, no release" >&2
+                  exit 1
+                }
+                exit 0
+                ;;
+            esac
+            sleep 20
+          done
+          echo "CI on $sha did not finish in 30 minutes" >&2
+          exit 1
+
+      - name: Package the four crates
+        run: |
+          for crate in $CRATES; do
+            cargo package -p "$crate" --list
+          done
+
+      - name: Tag and push
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git fetch --force origin --tags
+          if git rev-parse -q --verify "refs/tags/v$VERSION" > /dev/null; then
+            echo "tag v$VERSION already exists"
+            exit 0
+          fi
+          git tag -a "v$VERSION" -m "Akousma v$VERSION"
+          git push origin "refs/tags/v$VERSION"
+
+      - name: Write the release notes
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          awk -v v="## [$VERSION]" '
+            index($0, v) == 1 { inside = 1; next }
+            inside && (/^---$/ || /^## /) { exit }
+            inside { print }
+          ' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          test -s "$RUNNER_TEMP/notes.md"
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if gh release view "v$VERSION" > /dev/null 2>&1; then
+            echo "release v$VERSION already exists"
+            exit 0
+          fi
+          flags=(--verify-tag --title "v$VERSION" --notes-file "$RUNNER_TEMP/notes.md")
+          if [[ "$VERSION" == *-* ]]; then flags+=(--prerelease); fi
+          gh release create "v$VERSION" "${flags[@]}"
+
+      # A rerun skips the crates that are already on crates.io.
+      - name: Publish to crates.io
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+            echo "CARGO_REGISTRY_TOKEN is empty: tag and release are cut, crates are not published" >&2
+            exit 1
+          fi
+          for crate in $CRATES; do
+            if cargo search "$crate" --limit 1 | grep -q "^$crate = \"$VERSION\""; then
+              echo "$crate $VERSION is already published"
+              continue
+            fi
+            cargo publish -p "$crate" --locked
+            sleep 45
+          done

@@ -1,0 +1,4 @@
+# Byte-compared by the tests, never converted.
+*.wav binary
+*.w64 binary
+tools/fuzz/seeds/** binary

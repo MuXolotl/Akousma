@@ -1,0 +1,17 @@
+[package]
+name = "akousma-headtohead"
+description = "akousma against symphonia, hound and the ffmpeg CLI on a corpus of WAVE files"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.88"
+license = "MIT OR Apache-2.0"
+publish = false
+
+# A standalone package: the root workspace excludes `tools/`.
+
+[workspace]
+
+[dependencies]
+akousma = { path = "../../crates/akousma" }
+hound = "3.5"
+symphonia = { version = "0.6", default-features = false, features = ["wav", "pcm", "adpcm"] }

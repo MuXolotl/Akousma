@@ -1,0 +1,11 @@
+[package]
+name = "akousma-release"
+description = "Checks and applies the version of an Akousma release across the workspace and the changelog"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.88"
+license = "MIT OR Apache-2.0"
+publish = false
+
+# A standalone package: the root workspace excludes `tools/`.
+[workspace]

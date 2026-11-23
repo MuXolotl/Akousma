@@ -1,0 +1,38 @@
+[package]
+name = "akousma"
+description = "Audio decoding library in pure Rust: containers, codecs and tags, without dependencies or unsafe code"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+documentation = "https://docs.rs/akousma"
+keywords = ["audio", "decoder", "wav", "pcm", "adpcm"]
+categories = ["multimedia::audio", "multimedia::encoding", "parser-implementations"]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[features]
+default = ["wav"]
+# WAVE family: RIFF, RIFX, RF64, BW64 and Sony Wave64 with PCM, IEEE float,
+# G.711 and ADPCM.
+wav = ["dep:akousma-wav"]
+
+[dependencies]
+akousma-core = { version = "0.1.0", path = "../akousma-core" }
+akousma-meta = { version = "0.1.0", path = "../akousma-meta" }
+akousma-wav = { version = "0.1.0", path = "../akousma-wav", optional = true }
+
+[[example]]
+name = "decode_wav"
+required-features = ["wav"]
+
+[[test]]
+name = "wav_suite"
+required-features = ["wav"]
+
+[[test]]
+name = "zero_alloc"
+required-features = ["wav"]

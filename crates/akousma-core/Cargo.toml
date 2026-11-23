@@ -1,0 +1,12 @@
+[package]
+name = "akousma-core"
+description = "Core I/O, bit readers and shared types for the Akousma audio decoding library"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+documentation = "https://docs.rs/akousma-core"
+keywords = ["audio", "decoder", "pcm", "metadata", "parser"]
+categories = ["multimedia::audio", "multimedia::encoding"]
