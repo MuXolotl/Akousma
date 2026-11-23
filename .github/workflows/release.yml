@@ -10,7 +10,8 @@ on:
 
 permissions:
   contents: write
-  # The release starts CI itself: ci.yml has no push trigger.
+  # The release starts the CI run itself: a rerun after a red CI has no new
+  # push to trigger one.
   actions: write
 
 concurrency:
@@ -74,8 +75,8 @@ jobs:
             git push origin HEAD:main
           fi
 
-      # ci.yml is dispatch-only, so the release starts it on the bump commit
-      # and waits for its conclusion before the tag exists.
+      # The release starts CI on the bump commit itself and waits for its
+      # conclusion before the tag exists.
       - name: Wait for CI on the bump commit
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
