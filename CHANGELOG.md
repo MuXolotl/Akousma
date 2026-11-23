@@ -9,6 +9,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+---
+
+## [0.1.0] — 2026-11-23
+
 ### Added
 
 - The `akousma`, `akousma-core`, `akousma-meta` and `akousma-wav` crates.
@@ -35,3 +39,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - [`decode_file`](crates/akousma/README.md) collects samples as `f32`, so
   32- and 64-bit integer and 64-bit float sources can lose precision. The
   decoders keep at most 32 bits of integer precision.
+
+---
+
+[Unreleased]: https://github.com/MuXolotl/Akousma/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/MuXolotl/Akousma/releases/tag/v0.1.0
