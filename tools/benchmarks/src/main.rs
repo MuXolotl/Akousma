@@ -35,6 +35,11 @@ const PASSES: [&str; 5] = ["akousma", AKOUSMA_RAW, "symphonia", "hound", FFMPEG]
 /// The compared implementations, in the order of the capability matrix.
 const LIBRARIES: [&str; 4] = ["akousma", "symphonia", "hound", FFMPEG];
 const SEEKERS: [&str; 3] = ["akousma", "symphonia", "hound"];
+/// Timed runs per value, after one warm-up run. The published numbers were
+/// taken with `--runs 100` and the method in `BENCHMARKS.md` says so, so that
+/// is the default: a median of 7 is too few to tell a change from noise.
+const DEFAULT_RUNS: usize = 100;
+
 const SEEKS: usize = 1000;
 /// Frames that must be available from the target after every seek.
 const SEEK_FRAMES: usize = 1024;
@@ -893,7 +898,7 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let (mut dir, mut out_path, mut runs) = (None, None, 7);
+    let (mut dir, mut out_path, mut runs) = (None, None, DEFAULT_RUNS);
     let mut program: Option<PathBuf> = None;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {

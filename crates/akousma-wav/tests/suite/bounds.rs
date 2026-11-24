@@ -217,6 +217,29 @@ fn root_shorter_than_source_extends_to_present_chunks() {
         assert_eq!(open(file).unwrap().tracks()[0].params.total_frames, Some(2));
     }
 
+    // A trailer past the audio whose size runs past the source, with the
+    // root already short of it: the file is walked to the end, the trailer
+    // ends the walk, and the audio is the same with and without metadata.
+    // Shape of taglib's `infloop.wav`: a 14 KiB file whose root stops right
+    // after the audio, followed by a chunk claiming ~1.1 GiB. The trailer is
+    // bytes the root never accounted for, so it ends the walk, and the audio
+    // is the same with and without metadata. (Before, reading metadata made
+    // this an error while skipping it decoded the file.)
+    for with_metadata in [true, false] {
+        let mut file = riff(&[
+            fmt16(),
+            chunk(b"data", &PCM),
+            raw_chunk(b"ISTt", 1_224_736_768, b"junk"),
+        ]);
+        // The root covers `fmt ` and `data` only: fmt 24, data 8 + 4.
+        set_size32(&mut file, 4 + 24 + 8 + 4);
+        assert_eq!(
+            drain::<i16>(&mut open_with(file, &meta(with_metadata)).unwrap()).unwrap()[0],
+            [1, 2],
+            "read_metadata = {with_metadata}"
+        );
+    }
+
     // Wave64, five bytes short of the source but with the chunks fully
     // present: accepted, like the eight-byte-short ffmpeg shape.
     let mut file = w64(&[w64_chunk(b"fmt ", &fmt18()), w64_chunk(b"data", &PCM)]);

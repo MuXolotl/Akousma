@@ -59,19 +59,53 @@ jobs:
           key: ${{ runner.os }}-test-${{ env.RUST_PINNED }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
           restore-keys: ${{ runner.os }}-test-${{ env.RUST_PINNED }}-
       - name: Format
+        id: fmt
         run: cargo fmt --all -- --check
       - name: Clippy
+        id: clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - name: Documentation
+        id: doc
         env:
           RUSTDOCFLAGS: "-D warnings"
         run: cargo doc --workspace --no-deps --all-features
       - name: Tests
+        id: tests
         run: cargo test --workspace --all-features
       - name: Doctests
+        id: doctests
         run: cargo test --workspace --all-features --doc
       - name: Check without default features
+        id: nodefault
         run: cargo check --workspace --no-default-features
+      # The six steps above are the whole contract of this job; the summary
+      # repeats them in one table so a long run reads at a glance.
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Test ($OS)"
+            echo
+            echo "| Step | Result |"
+            echo "| --- | --- |"
+            echo "| Format | $FMT |"
+            echo "| Clippy | $CLIPPY |"
+            echo "| Documentation | $DOC |"
+            echo "| Tests | $TESTS |"
+            echo "| Doctests | $DOCTESTS |"
+            echo "| Without default features | $NODEFAULT |"
+            echo
+            echo "Job: $RESULT"
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          OS: ${{ matrix.os }}
+          FMT: ${{ steps.fmt.outcome }}
+          CLIPPY: ${{ steps.clippy.outcome }}
+          DOC: ${{ steps.doc.outcome }}
+          TESTS: ${{ steps.tests.outcome }}
+          DOCTESTS: ${{ steps.doctests.outcome }}
+          NODEFAULT: ${{ steps.nodefault.outcome }}
+          RESULT: ${{ job.status }}
 
   wasm:
     name: WebAssembly check

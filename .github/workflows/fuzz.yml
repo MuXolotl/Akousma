@@ -1,6 +1,9 @@
 name: Fuzz
 
 on:
+  # Started by hand. The two triggers below are kept ready to enable.
+  push:
+    branches: [main]
   schedule:
     - cron: "0 3 * * *"
   workflow_dispatch:
@@ -20,7 +23,7 @@ jobs:
   fuzz:
     name: Fuzz ${{ matrix.target }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -40,14 +43,53 @@ jobs:
           path: tools/fuzz/corpus/${{ matrix.target }}
           key: ${{ runner.os }}-fuzz-${{ matrix.target }}-${{ github.run_id }}
           restore-keys: ${{ runner.os }}-fuzz-${{ matrix.target }}-
+      # The seed count and the corpus size before the run are what the summary
+      # compares against, so they are taken before anything is copied in.
+      - name: Count the corpus
+        id: corpus
+        run: |
+          echo "count=$(find "tools/fuzz/corpus/$TARGET" -type f 2>/dev/null | wc -l)" >> "$GITHUB_OUTPUT"
+          echo "seeds=$(find "tools/fuzz/seeds/$TARGET" -type f | wc -l)" >> "$GITHUB_OUTPUT"
+        env:
+          TARGET: ${{ matrix.target }}
       - name: Add the seeds to the corpus
         run: mkdir -p "tools/fuzz/corpus/$TARGET" && cp "tools/fuzz/seeds/$TARGET"/* "tools/fuzz/corpus/$TARGET/"
         env:
           TARGET: ${{ matrix.target }}
+      # Five minutes is enough to know a push did not break the parser and
+      # far too little to find anything new: libFuzzer needs hours for that.
       - name: Fuzz
-        run: cargo +nightly fuzz run "$TARGET" --fuzz-dir tools/fuzz -- -max_total_time=300 -timeout=10 -rss_limit_mb=2048
+        run: cargo +nightly fuzz run "$TARGET" --fuzz-dir tools/fuzz -- -max_total_time="$BUDGET" -timeout=10 -rss_limit_mb=2048
         env:
           TARGET: ${{ matrix.target }}
+          BUDGET: ${{ github.event_name == 'schedule' && 3600 || (github.event_name == 'push' && 300 || 1800) }}
+      - name: Count the corpus after the run
+        id: after
+        if: always()
+        run: echo "count=$(find "tools/fuzz/corpus/$TARGET" -type f 2>/dev/null | wc -l)" >> "$GITHUB_OUTPUT"
+        env:
+          TARGET: ${{ matrix.target }}
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Fuzz $TARGET"
+            echo
+            echo "- Trigger: \`$EVENT\`"
+            echo "- Budget: $(($BUDGET / 60)) min"
+            echo "- Seeds: $SEEDS"
+            echo "- Corpus before: $BEFORE files"
+            echo "- Corpus after: $AFTER files"
+            echo "- Result: $RESULT"
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          TARGET: ${{ matrix.target }}
+          EVENT: ${{ github.event_name }}
+          BUDGET: ${{ github.event_name == 'schedule' && 3600 || (github.event_name == 'push' && 300 || 1800) }}
+          SEEDS: ${{ steps.corpus.outputs.seeds }}
+          BEFORE: ${{ steps.corpus.outputs.count }}
+          AFTER: ${{ steps.after.outputs.count }}
+          RESULT: ${{ job.status }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:

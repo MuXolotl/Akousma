@@ -393,7 +393,9 @@ impl AudioBuf {
         let out = self.output(out);
         let window = self.window();
         match &self.planes {
-            AudioPlanes::I16(p) => interleave(p, window, out, |s| f32::from(s) * I16_TO_F32),
+            AudioPlanes::I16(p) => {
+                interleave_converting(p, window, out, |s| f32::from(s) * I16_TO_F32);
+            }
             AudioPlanes::I32(p) => interleave(p, window, out, |s| s as f32 * I32_TO_F32),
             AudioPlanes::F32(p) => interleave(p, window, out, |s| s),
         }
@@ -490,6 +492,28 @@ fn interleave<S: Copy, D: Copy>(
                 }
             }
         }
+    }
+}
+
+/// [`interleave`] for planes converted to `f32`. Stereo is a plain zipped
+/// loop, which the compiler vectorizes where the blocked loop of
+/// [`interleave`] stays scalar; other layouts use [`interleave`].
+fn interleave_converting<S: Copy>(
+    planes: &[Vec<S>],
+    window: core::ops::Range<usize>,
+    out: &mut [f32],
+    convert: impl Fn(S) -> f32,
+) {
+    if let [left, right] = planes {
+        let (left, right) = (&left[window.clone()], &right[window]);
+        // No block loop: over pairs the compiler turns the zip into a
+        // vectorized loop; the blocked loop above stays scalar for `f32`.
+        let (pairs, _) = out.as_chunks_mut::<2>();
+        for ((&l, &r), o) in left.iter().zip(right).zip(pairs) {
+            *o = [convert(l), convert(r)];
+        }
+    } else {
+        interleave(planes, window, out, convert);
     }
 }
 
@@ -697,6 +721,40 @@ mod tests {
                     assert_eq!(i32::from(*o), e >> 16, "{channels} ch, {frames} frames");
                 }
                 assert!(out[expected.len()..].iter().all(|&s| s == i16::MIN));
+            }
+        }
+    }
+
+    #[test]
+    fn i16_planes_to_f32_match_reference() {
+        for channels in 1..=3usize {
+            for frames in [0usize, 1, 7, 8, 9, 16, 17, 33] {
+                let mut buf = AudioBuf::new(
+                    AudioPlanes::I16(vec![Vec::new(); channels]),
+                    44_100,
+                    ChannelMask::EMPTY,
+                    16,
+                )
+                .unwrap();
+                buf.reset_window(frames + 3).unwrap();
+                for (ch, plane) in buf.planes_mut::<i16>().unwrap().enumerate() {
+                    for (i, s) in plane.iter_mut().enumerate() {
+                        *s = i16::try_from(ch * 1000 + i).unwrap().wrapping_mul(997);
+                    }
+                }
+                buf.apply_trim(2, 1);
+                let mut expected = Vec::new();
+                for f in 0..buf.frames() {
+                    for ch in 0..channels {
+                        expected.push(f32::from(buf.plane::<i16>(ch).unwrap()[f]) / 32_768.0);
+                    }
+                }
+                let mut out = vec![f32::NAN; expected.len() + 5];
+                assert_eq!(buf.copy_interleaved_f32(&mut out), expected.len());
+                for (o, e) in out.iter().zip(&expected) {
+                    assert_eq!(o.to_bits(), e.to_bits(), "{channels} ch, {frames} frames");
+                }
+                assert!(out[expected.len()..].iter().all(|s| s.is_nan()));
             }
         }
     }

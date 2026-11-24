@@ -37,28 +37,28 @@ inputs because they measure time per frame, regardless of its size.
 ## WAV · decoding speed
 
 ns per frame, lower is better. **Bold** is the best value of a column.
-Ratios to akousma (other / akousma; lower is faster): symphonia 1.4–3.3, hound 7.5–21.
+Ratios to akousma (other / akousma; lower is faster): symphonia 1.6–5.3, hound 7.5–34.
 The ffmpeg row is end to end and is not comparable with the rest.
 
 | Implementation | PCM 16-bit | PCM 24-bit | Float 32-bit | IMA ADPCM |
 |---|---:|---:|---:|---:|
-| akousma | **0.77** | **1.27** | **0.98** | **3.22** |
-| symphonia | 2.54 | 3.39 | 2.32 | 4.62 |
-| hound | 16.2 | 16.1 | 7.37 | — |
-| ffmpeg (CLI, end to end) | 31.0 | 13.0 | 13.2 | 24.9 |
+| akousma | **0.48** | **1.27** | **0.98** | **2.89** |
+| symphonia | 2.53 | 3.37 | 2.30 | 4.60 |
+| hound | 16.2 | 16.2 | 7.37 | — |
+| ffmpeg (CLI, end to end) | 31.1 | 13.4 | 13.5 | 24.9 |
 
 Output differences from akousma: `symphonia` on IMA ADPCM (multiply form, max abs diff 2.6e-3).
 
 ## WAV · seek and read
 
 µs per jump, lower is better. **Bold** is the best value of a column.
-Ratios to akousma (other / akousma; lower is faster): symphonia 1.3–1.7, hound 5.4–19.
+Ratios to akousma (other / akousma; lower is faster): symphonia 1.2–2.6, hound 7.0–29.
 
 | Implementation | PCM 16-bit | PCM 24-bit | Float 32-bit | IMA ADPCM |
 |---|---:|---:|---:|---:|
-| akousma | **3.44** | **5.48** | **4.33** | **12.9** |
-| symphonia | 5.80 | 7.39 | 6.11 | — |
-| hound | 66.5 | 66.0 | 23.4 | — |
+| akousma | **2.28** | **5.50** | **4.31** | **12.0** |
+| symphonia | 5.82 | 7.43 | 5.26 | — |
+| hound | 66.6 | 66.1 | 30.3 | — |
 
 ## akousma only · cost of conversion to interleaved f32
 
@@ -66,12 +66,13 @@ Values are ns per frame; lower is faster.
 
 | Input | Decode only | Decode + interleaved f32 | Conversion share |
 |---|---:|---:|---:|
-| WAV · PCM 16-bit | 0.27 | 0.77 | 65 % |
+| WAV · PCM 16-bit | 0.27 | 0.48 | 44 % |
 | WAV · PCM 24-bit | 0.82 | 1.27 | 35 % |
 | WAV · Float 32-bit | 0.53 | 0.98 | 46 % |
-| WAV · IMA ADPCM | 2.69 | 3.22 | 16 % |
+| WAV · IMA ADPCM | 2.68 | 2.89 | 7 % |
 
 ## Notes
+
 
 **Errors.**
 
@@ -95,8 +96,8 @@ planar output and does not include this conversion.
 
 - Symphonia reads through `MediaSourceStream` and uses
   `copy_to_slice_interleaved::<f32>` for the conversion.
-- Hound reads 4096 frames at a time. The benchmark covers integer PCM and
-  32-bit float in RIFF files; hound rejects the IMA ADPCM inputs.
+- Hound reads 4096 frames at a time. The benchmark covers integer PCM
+  and 32-bit float in RIFF files; hound rejects the IMA ADPCM inputs.
 - The ffmpeg CLI row includes process startup, reading a temporary file,
   decoding, conversion and writing the output pipe. It is not directly
   comparable with the in-process measurements. There is no ffmpeg seek row.
@@ -110,30 +111,25 @@ library. The file is opened before timing; each seek is followed by reading
 Symphonia seeks to a packet boundary and the benchmark drops earlier frames.
 Akousma trims to the requested frame. Hound seeks to a frame but reads samples
 one at a time. Packet sizes differ, so implementations may decode or read more
-than 1024 frames. Akousma's first packet after a block-codec seek is smaller
-and grows toward its usual size; see the input-specific packet sizes below.
-This table measures seek latency with that read-ahead, not throughput.
+than 1024 frames. Akousma's first packet after a block-codec seek is
+smaller and grows toward its usual size; see the input-specific packet sizes
+below. This table measures seek latency with that read-ahead, not throughput.
 
-Frames in akousma's first packet after a seek: 4096 frames (0.09 s of audio)
-on WAV · PCM 16-bit, WAV · PCM 24-bit and WAV · Float 32-bit, 2041 frames
-(0.05 s of audio), rising to 16328 (0.37 s) in the packets after it, on WAV ·
-IMA ADPCM.
+Frames in akousma's first packet after a seek: 4096 frames (0.09 s of audio) on WAV · PCM 16-bit, WAV · PCM 24-bit and WAV · Float 32-bit, 2041 frames (0.05 s of audio), rising to 16328 (0.37 s) in the packets after it, on WAV · IMA ADPCM.
 
 ### Method
 
-Input: synthetic, 4 stereo 44100 Hz WAVE files of about 30 s generated in RAM
-(three tones per channel plus xorshift64* noise); the IMA ADPCM file has
-2048-byte blocks of 2041 frames and an `IMAADPCMWAVEFORMAT` header (`cbSize` 2,
-holding `wSamplesPerBlock`). Each value is the median of 100 runs after one
-warm-up run. Decoding speed is total file time divided by decoded frame count.
-In-process table rows are ordered by their mean ratio to akousma; `ffmpeg` is
-listed last because its timing includes process overhead.
+Input: synthetic, 4 stereo 44100 Hz WAVE files of about 30 s generated in RAM (three tones per channel plus xorshift64* noise); the IMA ADPCM file has 2048-byte blocks of 2041 frames and an `IMAADPCMWAVEFORMAT` header (`cbSize` 2, holding `wSamplesPerBlock`). Each value is the median of 100 runs after one warm-up run.
+Decoding speed is total file time divided by the decoded frame count. The
+in-process table rows are ordered by their mean ratio to akousma; the report
+shows those ratios and the best value in each column. The ffmpeg row is listed
+separately because it includes process overhead.
 
 The conversion share is calculated from the two akousma timings. It is based on
 medians and can vary between runs, especially when conversion is a small part
 of the total. Treat it as an estimate.
 
 Outputs are checked against `akousma::decode_bytes`: the full file, the
-1024-frame region after each seek, or the frame count for `decode only`. A
-frame-count mismatch is an error. Other output differences and their known
+1024-frame region after each seek, or the frame count for `decode only`.
+A frame-count mismatch is an error. Other output differences and their known
 causes are listed below the tables.

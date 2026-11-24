@@ -14,6 +14,11 @@ const CHANGELOG: &str = "CHANGELOG.md";
 const ROOT_MANIFEST: &str = "Cargo.toml";
 const CRATES_DIR: &str = "crates";
 const UNRELEASED: &str = "[Unreleased]";
+// Each of these packages keeps its own committed lock file, built with
+// `--locked` in CI: it pins the workspace crates by version, so a bump that
+// leaves them behind fails the next check with "lock file needs to be
+// updated". They are patched here, where both versions are known.
+const TOOL_PACKAGES: [&str; 2] = ["tools/benchmarks", "tools/headtohead"];
 /// The repository every changelog link points at.
 const REPOSITORY: &str = "https://github.com/MuXolotl/Akousma";
 
@@ -314,6 +319,37 @@ fn requirements(text: &str, member_names: &[String]) -> Vec<Requirement> {
 
 /// Byte offsets are computed on the LF text that is written back, so a CRLF
 /// checkout is normalised first.
+/// Rewrites the `version` of every workspace crate inside a committed lock
+/// file.
+///
+/// A lock file names a path package by name and version only, with no source
+/// and no checksum, so the line after the name is the whole record. Only those
+/// records change: a third-party package that happens to share a name keeps
+/// its version.
+fn set_lock_versions(text: &str, names: &[String], version: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut previous_name: Option<&str> = None;
+    for line in text.split_inclusive('\n') {
+        let trimmed = line.trim_end_matches(['\n', '\r']);
+        if let Some(name) = trimmed
+            .strip_prefix("name = \"")
+            .and_then(|rest| rest.strip_suffix('"'))
+        {
+            previous_name = Some(name);
+            out.push_str(line);
+            continue;
+        }
+        let is_workspace_crate = previous_name.is_some_and(|name| names.iter().any(|n| n == name));
+        if is_workspace_crate && trimmed.starts_with("version = \"") {
+            out.push_str(&format!("version = \"{version}\"\n"));
+        } else {
+            out.push_str(line);
+        }
+        previous_name = None;
+    }
+    out
+}
+
 fn lf_only(text: &str) -> String {
     text.replace("\r\n", "\n")
 }
@@ -356,6 +392,20 @@ fn prepare(root: &Path, version: &Version) -> Result<()> {
         }
         if updated != text {
             edits.push((member.path.clone(), updated));
+        }
+    }
+
+    if old != version {
+        for package in TOOL_PACKAGES {
+            let path = root.join(package).join("Cargo.lock");
+            if !path.exists() {
+                continue;
+            }
+            let text = read(&path)?;
+            let updated = set_lock_versions(&text, &names, version);
+            if updated != text {
+                edits.push((path, updated));
+            }
         }
     }
 
@@ -640,6 +690,28 @@ mod tests {
         assert!(date_changelog(empty, "0.1.0").is_err());
         let done = "## [Unreleased]\n\n- x\n\n## [0.1.0] — 2026-11-21\n\n- y\n";
         assert!(date_changelog(done, "0.1.0").is_err());
+    }
+
+    #[test]
+    fn lock_versions_of_workspace_crates_only() {
+        let lock = "version = 4\n\
+\n\
+[[package]]\n\
+name = \"akousma-wav\"\n\
+version = \"0.1.0\"\n\
+dependencies = [\n\
+ \"akousma-core\",\n\
+]\n\
+\n\
+[[package]]\n\
+name = \"extended\"\n\
+version = \"0.1.0\"\n\
+source = \"registry+https://github.com/rust-lang/crates.io-index\"\n";
+        let out = set_lock_versions(lock, &names(), "0.1.1");
+        assert!(out.contains("name = \"akousma-wav\"\nversion = \"0.1.1\""));
+        // A third-party crate that happens to share a version is not ours.
+        assert!(out.contains("name = \"extended\"\nversion = \"0.1.0\""));
+        assert_eq!(out.matches("version = \"0.1.1\"").count(), 1);
     }
 
     #[test]

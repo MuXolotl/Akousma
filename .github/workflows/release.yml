@@ -64,16 +64,24 @@ jobs:
           git --no-pager diff --stat
 
       - name: Commit and push the bump
+        id: bump
         env:
           VERSION: ${{ inputs.version }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add Cargo.toml crates/*/Cargo.toml CHANGELOG.md
+          # The tool packages pin the workspace crates in their own lock files
+          # and build with --locked, so a bump that leaves them behind fails
+          # the next CI run.
+          git add Cargo.toml crates/*/Cargo.toml CHANGELOG.md \
+            Cargo.lock tools/benchmarks/Cargo.lock tools/headtohead/Cargo.lock
           if ! git diff --staged --quiet; then
             git commit -m "Release v$VERSION"
             git push origin HEAD:main
+          else
+            echo "the bump was already committed on main"
           fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       # The release starts CI on the bump commit itself and waits for its
       # conclusion before the tag exists.
@@ -166,3 +174,26 @@ jobs:
             cargo publish -p "$crate" --locked
             sleep 45
           done
+
+      # A release run is the one run that cannot simply be repeated: what it
+      # did, and to which commit, has to survive in the run itself.
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Release v$VERSION"
+            echo
+            echo "- Version: \`$VERSION\`"
+            echo "- Bump commit: \`$SHA\`"
+            echo "- Tag: \`v$VERSION\`"
+            echo "- Crates: $CRATES"
+            echo "- Result: $RESULT"
+            echo
+            echo "A failed publish is retried by rerunning this workflow with the"
+            echo "same version: crates already on crates.io are skipped."
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          VERSION: ${{ inputs.version }}
+          SHA: ${{ steps.bump.outputs.sha }}
+          CRATES: ${{ env.CRATES }}
+          RESULT: ${{ job.status }}

@@ -9,6 +9,27 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Changed
+
+- `DemuxOptions` and `DecodeOptions` are `#[non_exhaustive]`, so an option can
+  be added without a breaking change. Both are built with `new` and the
+  `with_` setters.
+- `CodecParams` stays exhaustive on purpose: a decoder may build one to
+  describe its output.
+
+### Fixed
+
+- A file whose audio was found no longer depends on `read_metadata` when a
+  trailing chunk runs past the end of the source: both modes give the same
+  samples, as FFmpeg does. A chunk that does not fit the source before the
+  audio is still rejected.
+
+### Performance
+
+- Converting 16-bit stereo planes to `f32` is faster: the stereo path is a
+  zipped loop that vectorizes, the generic path stays scalar. The output is
+  bit-identical.
+
 ---
 
 ## [0.1.0] — 2026-11-23

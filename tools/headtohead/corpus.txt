@@ -79,3 +79,12 @@ https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/Samples/Goldwave/addf
 https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/Samples/Perverse/Ptjunk.wav d7eaa5258d9a599e23f46989da4e54b7c7bac48c025330146c3b5b1808f1b1f3
 # mmsp; Perverse series (intentionally odd files from Microsoft).
 https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/Samples/Perverse/Utopia%20Critical%20Stop.WAV 51e8b50d4919802bebd6e639f75e7a758343b7cdd22db84cbd1f84a9ae0e6a0d
+# taglib; the same file as in tools/check, where it is a corpus case: here it is the
+# comparison that shows ffmpeg and akousma agree on it.
+https://raw.githubusercontent.com/taglib/taglib/7333be146c0a412d345f7e73554e383ebb8d6fc3/tests/data/infloop.wav ee7913f61fcddd207945a2f322c2dcb30e6d5e7ee9ee0ef04ca9d3de7272299c
+# mmsp; Goldwave GSM 6.10, wBitsPerSample = 0 with nBlockAlign = 65. ffmpeg reads it,
+# akousma rejects it: there is no GSM decoder, and that stays so.
+https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/Samples/Goldwave/addf8-GSM-GW.wav 15799fe709b1d7d86a888b0dc8dbf3e528e36472c9abad1a31b58e9ba19d858f
+# taglib; MPEG audio carried inside WAVE. ffmpeg probes the payload and reads it,
+# akousma does not: guessing a codec from bytes is the one thing this decoder never does.
+https://raw.githubusercontent.com/taglib/taglib/7333be146c0a412d345f7e73554e383ebb8d6fc3/tests/data/mpeg-in-wave.wav f45278d8f2109404f4c189c1c7b7ee0645d5618e50ab960c58d6ed1bf0c9d2db

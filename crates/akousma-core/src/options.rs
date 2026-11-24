@@ -160,7 +160,12 @@ impl Default for FormatLimits {
 /// assert!(!options.read_metadata);
 /// assert!(options.gapless);
 /// ```
+///
+/// The struct is non-exhaustive: an option may be added in a later release,
+/// so it is built with [`DemuxOptions::new`] and the `with_` setters rather
+/// than a struct literal.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct DemuxOptions {
     /// Size limits applied to untrusted stream fields. Default:
     /// [`FormatLimits::new`].
@@ -230,7 +235,12 @@ impl Default for DemuxOptions {
 /// assert!(!options.verify_checksums);
 /// assert!(options.apply_trim);
 /// ```
+///
+/// The struct is non-exhaustive: an option may be added in a later release,
+/// so it is built with [`DecodeOptions::new`] and the `with_` setters rather
+/// than a struct literal.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct DecodeOptions {
     /// Verify per-frame checksums and whole-stream checksums where the format
     /// stores them. Default: `true`.

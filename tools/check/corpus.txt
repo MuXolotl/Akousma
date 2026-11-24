@@ -26,9 +26,14 @@ https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/Samples/Perverse/Pmis
 # GSM 6.10: not a format akousma reads. The fmt chunk also has bits_per_sample 0 and
 # a block alignment of 65, so a reader that trusts the header blindly will misbehave.
 https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/Samples/Goldwave/addf8-GSM-GW.wav 15799fe709b1d7d86a888b0dc8dbf3e528e36472c9abad1a31b58e9ba19d858f
-# WavPack inside a RIFF container (format tag 0x161), and the file is truncated:
-# the root size claims 1120884 bytes, the file has 65536.
+# WMA version 2 inside a RIFF container (format tag 0x0161), and the file is
+# truncated: the root size claims 1120884 bytes, the file has 65536. WavPack in
+# RIFF would be 0x5756; 0x0161 is the Windows Media Audio tag.
 https://fate-suite.ffmpeg.org/wav/FLCL_Ending_My-short.wav cd14eacaddaecdddcaefa0bb89ddf8a6309991c3e170a6d22c55a2bcffbae842
 # Sony Wave64 from the FFmpeg FATE suite: PCM 16-bit mono 11025 Hz. The root size field is
 # eight bytes short of the data chunk, which is what ffmpeg's own muxer wrote in 2008.
 https://fate-suite.ffmpeg.org/w64/w64-pcm16.w64 75090bfd5d74bef6a5331fffa01ae4fade121db2da66d194b504d5924ae02d41
+# taglib; data 14083 frames followed by an ISTt chunk declaring 1224736768 bytes.
+# Without it the walk reads metadata, hits that size and rejected the file while
+# read_metadata = false decoded it; both modes now give 14083 frames, as ffmpeg does.
+https://raw.githubusercontent.com/taglib/taglib/7333be146c0a412d345f7e73554e383ebb8d6fc3/tests/data/infloop.wav ee7913f61fcddd207945a2f322c2dcb30e6d5e7ee9ee0ef04ca9d3de7272299c

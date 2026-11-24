@@ -78,9 +78,11 @@ const TRACK_ID: u32 = 0;
 ///
 /// Without `read_metadata`, the chunk list is read only up to the `data`
 /// chunk once the format (and, for ADPCM, the `fact` chunk) is known: the
-/// chunks after it, metadata or not, are neither read nor checked, so a
-/// later chunk that crosses the end of the container is not noticed. The
-/// audio does not depend on them.
+/// chunks after it, metadata or not, are neither read nor checked. With
+/// `read_metadata` they are read, but a trailing chunk whose declared size
+/// runs past the source ends the walk instead of failing the file: the
+/// audio is already found and its length is settled, so the audio is the
+/// same with either value.
 #[derive(Debug)]
 pub struct WavDemuxer<R> {
     reader: ByteReader<R>,
@@ -340,6 +342,10 @@ fn scan_chunks<R: Read + Seek>(
     {
         container_end = Some(source_end);
     }
+    // Whether the root declared less than the source holds, before any chunk
+    // extends it: the shape of a miscounted root (see the trailer branch in
+    // the loop).
+    let root_short = container_end.is_some_and(|end| end < source_end);
     let mut pos = root.body_start;
     loop {
         let mut walk_end = container_end.map_or(source_end, |end| end.min(source_end));
@@ -381,6 +387,17 @@ fn scan_chunks<R: Read + Seek>(
                     container_end = Some(source_end);
                     walk_end = source_end;
                 }
+                // The header accounts for less than the file, and the audio
+                // is found: whatever follows `data` is a trailer whose size
+                // the header never accounted for, and no sample depends on
+                // it. This is how a miscounted root usually shows itself in
+                // the wild: a whole file, a root short of it, and a last
+                // chunk that claims more bytes than exist (taglib's
+                // `infloop.wav`). Reading the trailer anyway made the audio
+                // depend on `read_metadata`, which the options contract
+                // forbids: the file decodes to 14083 frames without
+                // metadata and was rejected with it.
+                _ if scan.data.is_some() && root_short => break,
                 _ => return Err(Error::at(ErrorKind::InvalidHeader, at)),
             }
         }

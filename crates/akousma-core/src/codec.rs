@@ -69,6 +69,10 @@ pub enum CodecId {
 }
 
 /// Parameters used to create a decoder for one track.
+///
+/// The struct is not non-exhaustive, unlike the option structs: it is part of
+/// the [`Decoder`] contract, and a decoder implementation may build one to
+/// report the parameters of its output.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CodecParams {
     /// Coding format.

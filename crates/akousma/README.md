@@ -17,6 +17,21 @@ Audio codecs:
 - IEEE float: 32- and 64-bit in both byte orders.
 - G.711 A-law and μ-law, IMA ADPCM, Microsoft ADPCM.
 
+The ADPCM decoders follow the specification rather than the fastest published
+variant, and the difference is audible in the last bits, not in the formula's
+intent:
+
+- IMA ADPCM: the difference is the sum of shifts of the step
+  (`step >> shift` plus the set bits of the code), as IMA Recommendation
+  Rev 3.00, Appendix D, §6.2 writes it. FFmpeg before 8.1 and Symphonia use the
+  multiply form `((2 * code + 1) * step) >> 3`, which can differ by up to two
+  least significant bits per sample.
+- Microsoft ADPCM: the prediction is divided by 256 truncating toward zero, as
+  in the Multimedia Data Standards Update (1994); an arithmetic shift by 8
+  would round negative predictions down.
+
+Neither choice changes the decoded length, only the last bits of each sample.
+
 Tags around the audio data (ID3v2 and APE at the start; APE, ID3v1, `TAG+` and
 Lyrics3 v2.00 at the end) are read for every format. Malformed tags are ignored. If
 the source fails or ends early while a tag is being read, opening the file
@@ -182,8 +197,35 @@ demuxer may stop scanning once it reaches the audio data.
   after audio that runs to the end are treated as audio because the header
   cannot distinguish them from audio data, so trailing tags of such a file
   are decoded as audio and not read as metadata.
+- A `data` chunk whose declared size runs past both the root end and the end
+  of the source is an invalid header: the header cannot say how much audio is
+  missing, so the file is rejected rather than cut to an arbitrary length. A
+  `data` chunk that fits the source but not the declared root is read to the
+  end of the source, as above.
 - Metadata chunks after the audio are read only when `read_metadata` is
-  enabled. Without it, they are not checked by the WAVE demuxer.
+  enabled. Without it, they are not checked by the WAVE demuxer. A trailing
+  chunk whose declared size runs past the end of the source ends the scan
+  instead of failing the file: the audio is already found and its length is
+  settled, so the same samples come out with or without `read_metadata`. A
+  chunk that does not fit the source *before* the audio is still an invalid
+  header, because there the header cannot say how much audio is missing.
+- A `WAVEFORMATEXTENSIBLE` `wValidBitsPerSample` below the container size is
+  reported but does not move the samples: 20 valid bits in a 24-bit container
+  decode as 24-bit words in the most significant bits of the `i32` plane, the
+  same values FFmpeg returns. The Microsoft text places the valid bits in the
+  most significant part of the container, so the samples need no shift; a file
+  that stores them in the least significant bits instead decodes quietly and
+  looks like a header that lied, and the header alone cannot tell the two
+  apart.
+- `LIST wavl`, the RIFF form that lists alternating `data` and `slnt` chunks,
+  is not read: the file is rejected with an invalid header. The RIFF
+  specification allows the form; writable audio that reaches this decoder in
+  practice keeps a plain `data` chunk. FFmpeg has no `wavl` support either.
+
+`block_align` of 0 is rejected with an invalid header, as are a sample rate of
+0 and more than 64 channels. FFmpeg accepts all three by guessing frame sizes;
+this decoder does not guess, because a wrong guess silently shifts every sample
+after it.
 
 ## Crates
 

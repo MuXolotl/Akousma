@@ -37,10 +37,10 @@ and earlier use multiplication, while FFmpeg 8.1 and later use shift-add.
 
 | Library | Decoded |
 |---|---:|
-| akousma | 38 / 40 |
-| symphonia | 28 / 40 |
-| hound | 14 / 40 |
-| ffmpeg | 40 / 40 |
+| akousma | 39 / 42 |
+| symphonia | 29 / 42 |
+| hound | 15 / 42 |
+| ffmpeg | 42 / 42 |
 
 ## Capability by file
 
@@ -85,6 +85,8 @@ and earlier use multiplication, while FFmpeg 8.1 and later use shift-add.
 | addf8-GSM-GW.wav | ❌ | ❌ | ❌ | ✔️ |
 | addf8-mulaw-GW.wav | ✔️ | ✔️ | ❌ | ✔️ |
 | ima22m.wav | ✔️ | ✔️ | ❌ | ✔️ |
+| infloop.wav | ✔️ | ✔️ | ✔️ | ✔️ |
+| mpeg-in-wave.wav | ❌ | ❌ | ❌ | ✔️ |
 | sample.wav | ✔️ | ✔️ | ❌ | ✔️ |
 | w64-pcm16.w64 | ✔️ | ❌ | ❌ | ✔️ |
 | wrong-avg-byterate.wav | ✔️ | ✔️ | ❌ | ✔️ |
@@ -95,49 +97,51 @@ nanoseconds per frame, lower is better. The `ffmpeg` column is end to end (proce
 
 | File | akousma | symphonia | hound | ffmpeg |
 |---|---:|---:|---:|---:|
-| 200828-005.wav | **4.92** | 6.75 | 14.10 | 65.49 |
-| 27bit-8kHz-noBext-mono.wav | **3.23** | 4.12 | — | 241.74 |
-| 4-bit-imaadpcm-8kHz-noBext-mono-reaper.wav | **1.61** | 2.39 | — | 189.33 |
-| 4bit-imaadpcm-8kHz-noBext-mono-encoded.wav | **1.59** | — | — | 244.42 |
-| 4bit-imaadpcm-8kHz-noBext-mono.wav | **1.64** | 2.04 | — | 223.72 |
-| 4ch.wav | **10.11** | 11.99 | 26.77 | 358.78 |
-| 64bit-48kHz-noBext-mono.wav | **1.51** | 6.08 | — | 93.81 |
-| 6_Channel_ID.wav | **13.85** | 16.31 | 40.13 | 397.38 |
-| 8_Channel_ID.wav | **23.38** | 28.95 | 62.33 | 65.95 |
-| FLCL_Ending_My-short.wav | — | — | — | 43.48 |
-| M1F1-Alaw-AFsp.wav | **2.34** | 4.81 | — | 482.76 |
-| M1F1-AlawWE-AFsp.wav | **2.25** | — | — | 483.27 |
-| M1F1-float32-AFsp.wav | **1.64** | 2.99 | 7.41 | 483.53 |
-| M1F1-float32WE-AFsp.wav | **1.63** | 2.97 | 8.67 | 483.57 |
-| M1F1-float64-AFsp.wav | **2.63** | 11.01 | — | 493.74 |
-| M1F1-float64WE-AFsp.wav | **2.63** | 11.04 | — | 492.16 |
-| M1F1-int12-AFsp.wav | **1.32** | — | — | 642.42 |
-| M1F1-int12WE-AFsp.wav | **1.35** | 3.16 | — | 641.68 |
-| M1F1-int16WE-AFsp.wav | **1.35** | 3.16 | 10.30 | 640.31 |
-| M1F1-int24-AFsp.wav | **1.90** | 4.03 | 12.08 | 488.66 |
-| M1F1-int24WE-AFsp.wav | **1.91** | 3.97 | 12.12 | 488.56 |
-| M1F1-int32-AFsp.wav | **1.38** | 2.98 | 11.28 | 489.79 |
-| M1F1-int32WE-AFsp.wav | **1.38** | 3.02 | 11.70 | 489.31 |
-| M1F1-mulaw-AFsp.wav | **2.23** | 3.72 | — | 485.17 |
-| M1F1-mulawWE-AFsp.wav | **2.19** | — | — | 484.43 |
-| M1F1-uint8-AFsp.wav | **1.39** | 3.26 | 6.76 | 489.66 |
-| M1F1-uint8WE-AFsp.wav | **1.39** | 3.25 | 6.76 | 487.90 |
-| Pmiscck.wav | **144.44** | — | — | 1209011 |
-| Ptjunk.wav | **122.22** | — | — | 1208456 |
-| RF64-16bit-8kHz-stereo-reaper.wav | **2.68** | — | — | 198.07 |
-| RF64-64-bit-8kHz--mono-bext.wav | **1.15** | — | — | 241.91 |
-| RIFX-16bit-mono.wav | **0.47** | — | — | 276.48 |
-| Utopia%20Critical%20Stop.WAV | **1.88** | 2.63 | 5.53 | 6106 |
-| addf8-Alaw-GW.wav | **0.68** | 2.42 | — | 473.90 |
-| addf8-GSM-GW.wav | — | — | — | 479.67 |
-| addf8-mulaw-GW.wav | **0.68** | 1.96 | — | 472.06 |
-| ima22m.wav | **2.42** | 2.84 | — | 87.48 |
-| sample.wav | 3.30 | **3.02** | — | 53.39 |
-| w64-pcm16.w64 | **0.46** | — | — | 764.55 |
-| wrong-avg-byterate.wav | **0.90** | 2.10 | — | 2864 |
+| 200828-005.wav | **4.64** | 6.53 | 14.03 | 63.39 |
+| 27bit-8kHz-noBext-mono.wav | **2.85** | 4.15 | — | 232.06 |
+| 4-bit-imaadpcm-8kHz-noBext-mono-reaper.wav | **1.65** | 2.11 | — | 182.51 |
+| 4bit-imaadpcm-8kHz-noBext-mono-encoded.wav | **1.54** | — | — | 236.63 |
+| 4bit-imaadpcm-8kHz-noBext-mono.wav | **1.64** | 2.05 | — | 216.87 |
+| 4ch.wav | **10.37** | 12.74 | 27.49 | 351.77 |
+| 64bit-48kHz-noBext-mono.wav | **2.16** | 6.85 | — | 90.22 |
+| 6_Channel_ID.wav | **13.74** | 16.43 | 40.10 | 390.17 |
+| 8_Channel_ID.wav | **23.51** | 29.30 | 62.81 | 62.29 |
+| FLCL_Ending_My-short.wav | — | — | — | 41.46 |
+| M1F1-Alaw-AFsp.wav | **1.89** | 4.60 | — | 465.07 |
+| M1F1-AlawWE-AFsp.wav | **1.92** | — | — | 465.94 |
+| M1F1-float32-AFsp.wav | **1.65** | 3.02 | 8.69 | 465.06 |
+| M1F1-float32WE-AFsp.wav | **1.63** | 2.95 | 8.66 | 465.02 |
+| M1F1-float64-AFsp.wav | **2.56** | 10.92 | — | 474.11 |
+| M1F1-float64WE-AFsp.wav | **2.53** | 10.89 | — | 471.19 |
+| M1F1-int12-AFsp.wav | **0.92** | — | — | 620.15 |
+| M1F1-int12WE-AFsp.wav | **0.94** | 2.98 | — | 619.53 |
+| M1F1-int16WE-AFsp.wav | **1.04** | 3.10 | 10.29 | 618.69 |
+| M1F1-int24-AFsp.wav | **1.91** | 4.04 | 12.11 | 468.21 |
+| M1F1-int24WE-AFsp.wav | **1.94** | 3.98 | 12.13 | 468.93 |
+| M1F1-int32-AFsp.wav | **1.37** | 2.98 | 11.69 | 467.48 |
+| M1F1-int32WE-AFsp.wav | **1.36** | 2.98 | 11.27 | 469.07 |
+| M1F1-mulaw-AFsp.wav | **1.94** | 3.71 | — | 464.04 |
+| M1F1-mulawWE-AFsp.wav | **1.95** | — | — | 464.17 |
+| M1F1-uint8-AFsp.wav | **1.10** | 3.21 | 6.76 | 467.01 |
+| M1F1-uint8WE-AFsp.wav | **1.12** | 3.23 | 6.78 | 466.83 |
+| Pmiscck.wav | **122.22** | — | — | 1166600 |
+| Ptjunk.wav | **122.22** | — | — | 1167422 |
+| RF64-16bit-8kHz-stereo-reaper.wav | **1.85** | — | — | 188.97 |
+| RF64-64-bit-8kHz--mono-bext.wav | **1.12** | — | — | 229.66 |
+| RIFX-16bit-mono.wav | **0.46** | — | — | 264.00 |
+| Utopia%20Critical%20Stop.WAV | **1.99** | 2.63 | 5.53 | 5836 |
+| addf8-Alaw-GW.wav | **0.67** | 2.42 | — | 454.53 |
+| addf8-GSM-GW.wav | — | — | — | 461.65 |
+| addf8-mulaw-GW.wav | **0.67** | 1.93 | — | 454.45 |
+| ima22m.wav | **2.45** | 2.88 | — | 83.68 |
+| infloop.wav | **0.44** | 1.74 | 3.42 | 762.47 |
+| mpeg-in-wave.wav | — | — | — | 1647 |
+| sample.wav | 3.27 | **3.01** | — | 50.59 |
+| w64-pcm16.w64 | **0.46** | — | — | 739.21 |
+| wrong-avg-byterate.wav | **0.95** | 2.12 | — | 2760 |
 
-- `symphonia`: median `symphonia / akousma` ratio (ns per frame) 2.08, on 28 file(s) both decoded.
-- `hound`: median `hound / akousma` ratio (ns per frame) 4.87, on 14 file(s) both decoded.
+- `symphonia`: median `symphonia / akousma` ratio (ns per frame) 2.11, on 29 file(s) both decoded.
+- `hound`: median `hound / akousma` ratio (ns per frame) 6.04, on 15 file(s) both decoded.
 
 ## Sample difference
 
@@ -182,11 +186,13 @@ The largest absolute difference of the interleaved `f32` outputs against akousma
 | addf8-GSM-GW.wav | — | — | — |
 | addf8-mulaw-GW.wav | identical | — | identical |
 | ima22m.wav | 1.526e-3 | — | identical |
+| infloop.wav | identical | identical | identical |
+| mpeg-in-wave.wav | — | — | — |
 | sample.wav | identical | — | identical |
 | w64-pcm16.w64 | — | — | identical |
 | wrong-avg-byterate.wav | identical | — | identical |
 
-Bit-identical outputs: `symphonia` 25/28, `hound` 14/14, `ffmpeg` 36/38.
+Bit-identical outputs: `symphonia` 26/29, `hound` 15/15, `ffmpeg` 37/39.
 
 ## Rejections
 
@@ -194,6 +200,7 @@ Bit-identical outputs: `symphonia` 25/28, `hound` 14/14, `ffmpeg` 36/38.
 
 - `FLCL_Ending_My-short.wav`: unsupported codec at byte offset 20
 - `addf8-GSM-GW.wav`: unsupported codec at byte offset 20
+- `mpeg-in-wave.wav`: unsupported codec
 
 ### `symphonia`
 
@@ -208,6 +215,7 @@ Bit-identical outputs: `symphonia` 25/28, `hound` 14/14, `ffmpeg` 36/38.
 - `RF64-64-bit-8kHz--mono-bext.wav`: unsupported feature: core (probe): no suitable format reader found
 - `RIFX-16bit-mono.wav`: unsupported feature: core (probe): no suitable format reader found
 - `addf8-GSM-GW.wav`: unsupported feature: wav: unsupported wave format
+- `mpeg-in-wave.wav`: unsupported feature: wav: unsupported wave format
 - `w64-pcm16.w64`: unsupported feature: core (probe): no suitable format reader found
 
 ### `hound`
@@ -235,6 +243,7 @@ Bit-identical outputs: `symphonia` 25/28, `hound` 14/14, `ffmpeg` 36/38.
 - `addf8-GSM-GW.wav`: Ill-formed WAVE file: inconsistent fmt chunk
 - `addf8-mulaw-GW.wav`: The wave format of the file is not supported.
 - `ima22m.wav`: Ill-formed WAVE file: inconsistent fmt chunk
+- `mpeg-in-wave.wav`: Ill-formed WAVE file: inconsistent fmt chunk
 - `sample.wav`: Ill-formed WAVE file: inconsistent fmt chunk
 - `w64-pcm16.w64`: Ill-formed WAVE file: no RIFF tag found
 - `wrong-avg-byterate.wav`: Ill-formed WAVE file: inconsistent fmt chunk
@@ -245,6 +254,6 @@ Bit-identical outputs: `symphonia` 25/28, `hound` 14/14, `ffmpeg` 36/38.
 - Ratios are other / akousma nanoseconds per frame, computed only over files both libraries decoded; a ratio below 1 means the other library took less time. Bold compares the in-process values within each column.
 - The `ffmpeg` numbers include the process start-up, the reading of a temporary file, the decoding, the conversion and the pipe, so they are not comparable with the in-process rows and are excluded from the ratios.
 - `frames differ` is not an error: one library trimmed the ADPCM block padding to the `fact` count and the other did not.
-- Generated on 2026-11-21 from 40 file(s); pass the same `--dir`, `--runs` and `--out` to reproduce.
+- Generated on 2026-11-24 from 42 file(s); pass the same `--dir`, `--runs` and `--out` to reproduce.
 
 *Machine-specific snapshot. Do not edit.*
