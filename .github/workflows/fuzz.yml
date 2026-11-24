@@ -1,7 +1,6 @@
 name: Fuzz
 
 on:
-  # Started by hand. The two triggers below are kept ready to enable.
   push:
     branches: [main]
   schedule:
