@@ -9,6 +9,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+---
+
+## [0.1.1] — 2026-11-24
+
 ### Changed
 
 - `DemuxOptions` and `DecodeOptions` are `#[non_exhaustive]`, so an option can
@@ -63,5 +67,6 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ---
 
-[Unreleased]: https://github.com/MuXolotl/Akousma/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/MuXolotl/Akousma/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/MuXolotl/Akousma/releases/tag/v0.1.1
 [0.1.0]: https://github.com/MuXolotl/Akousma/releases/tag/v0.1.0

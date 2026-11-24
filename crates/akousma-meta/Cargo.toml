@@ -12,4 +12,4 @@ keywords = ["audio", "id3", "ape", "tags", "metadata"]
 categories = ["multimedia::audio", "parser-implementations"]
 
 [dependencies]
-akousma-core = { version = "0.1.0", path = "../akousma-core" }
+akousma-core = { version = "0.1.1", path = "../akousma-core" }

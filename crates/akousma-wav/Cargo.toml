@@ -12,5 +12,5 @@ keywords = ["audio", "wav", "riff", "adpcm", "decoder"]
 categories = ["multimedia::audio", "multimedia::encoding", "parser-implementations"]
 
 [dependencies]
-akousma-core = { version = "0.1.0", path = "../akousma-core" }
-akousma-meta = { version = "0.1.0", path = "../akousma-meta" }
+akousma-core = { version = "0.1.1", path = "../akousma-core" }
+akousma-meta = { version = "0.1.1", path = "../akousma-meta" }

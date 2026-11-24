@@ -21,9 +21,9 @@ default = ["wav"]
 wav = ["dep:akousma-wav"]
 
 [dependencies]
-akousma-core = { version = "0.1.0", path = "../akousma-core" }
-akousma-meta = { version = "0.1.0", path = "../akousma-meta" }
-akousma-wav = { version = "0.1.0", path = "../akousma-wav", optional = true }
+akousma-core = { version = "0.1.1", path = "../akousma-core" }
+akousma-meta = { version = "0.1.1", path = "../akousma-meta" }
+akousma-wav = { version = "0.1.1", path = "../akousma-wav", optional = true }
 
 [[example]]
 name = "decode_wav"
